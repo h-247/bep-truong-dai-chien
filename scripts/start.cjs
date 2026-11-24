@@ -52,15 +52,17 @@ setTimeout(() => {
   }
 }, 2500);
 
-// 4. Start vinext dev on the free port
+// 4. Start vinext dev on the free port directly via node.exe (prevents Windows EINVAL spawn error)
 console.log(`Đang khởi chạy máy chủ tại ${url}... (Nhấn Ctrl+C để dừng)\n`);
-const isWin = process.platform === 'win32';
-const npxCmd = isWin ? 'npx.cmd' : 'npx';
+const vinextCli = path.join(root, 'node_modules', 'vinext', 'dist', 'cli.js');
 
-const child = spawn(npxCmd, ['vinext', 'dev', '-p', String(port)], {
+const child = spawn(process.execPath, [vinextCli, 'dev', '-p', String(port)], {
   cwd: root,
   stdio: 'inherit',
-  shell: false,
+});
+
+child.on('error', (err) => {
+  console.error('Lỗi khởi chạy:', err);
 });
 
 child.on('exit', (code) => {
