@@ -1,6 +1,6 @@
 ﻿$root = (Get-Item $PSScriptRoot).Parent.FullName
 $icoPath = Join-Path $root "public\game.ico"
-$targetScript = Join-Path $root "launch.ps1"
+$batPath = Join-Path $root "start-game.bat"
 
 $desktops = @(
     [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop),
@@ -15,8 +15,7 @@ foreach ($desktopDir in $desktops) {
     if (Test-Path $desktopDir) {
         $shortcutPath = Join-Path $desktopDir "Bep Truong Dai Chien.lnk"
         $shortcut = $WshShell.CreateShortcut($shortcutPath)
-        $shortcut.TargetPath = "powershell.exe"
-        $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$targetScript`""
+        $shortcut.TargetPath = $batPath
         $shortcut.WorkingDirectory = $root
         $shortcut.IconLocation = "$icoPath,0"
         $shortcut.Description = "Bep Truong Dai Chien - Game Nau An Phoi Hop"

@@ -1,5 +1,9 @@
 @echo off
 title Bep Truong Dai Chien
 cd /d "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0launch.ps1"
-pause
+node scripts\start.cjs
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo Da xay ra loi khi khoi chay!
+    pause
+)
