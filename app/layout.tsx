@@ -27,6 +27,26 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         <meta name="theme-color" content="#212121" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined') {
+                window.addEventListener('unhandledrejection', function(event) {
+                  var r = event.reason;
+                  var msg = r && (r.message || String(r));
+                  if (msg && (
+                    msg.indexOf('send was called before connect') !== -1 ||
+                    msg.indexOf('WebSocket closed without opened') !== -1 ||
+                    msg.indexOf('failed to connect to websocket') !== -1
+                  )) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                  }
+                }, true);
+              }
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#212121] text-[#ECECEC]`}

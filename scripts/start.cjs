@@ -1,6 +1,7 @@
 const { execSync, spawn, exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
 
 const root = path.resolve(__dirname, '..');
 
@@ -40,19 +41,7 @@ while (usedPorts.has(port)) {
 console.log(`-> Đã chọn cổng trống an toàn: ${port}`);
 const url = `http://localhost:${port}`;
 
-// 3. Open browser after short delay
-setTimeout(() => {
-  console.log(`Đang mở trình duyệt tới ${url}...`);
-  if (process.platform === 'win32') {
-    exec(`start ${url}`);
-  } else if (process.platform === 'darwin') {
-    exec(`open ${url}`);
-  } else {
-    exec(`xdg-open ${url}`);
-  }
-}, 2500);
-
-// 4. Start vinext dev on the free port directly via node.exe (prevents Windows EINVAL spawn error)
+// 3. Start vinext dev on the free port directly via node.exe
 console.log(`Đang khởi chạy máy chủ tại ${url}... (Nhấn Ctrl+C để dừng)\n`);
 const vinextCli = path.join(root, 'node_modules', 'vinext', 'dist', 'cli.js');
 
@@ -61,10 +50,52 @@ const child = spawn(process.execPath, [vinextCli, 'dev', '-p', String(port)], {
   stdio: 'inherit',
 });
 
+// 4. Wait until the HTTP dev server is genuinely ready before launching the browser
+let browserOpened = false;
+function openBrowser() {
+  if (browserOpened) return;
+  browserOpened = true;
+  console.log(`\n-> Máy chủ đã sẵn sàng! Đang mở trình duyệt tới ${url}...`);
+  if (process.platform === 'win32') {
+    exec(`start ${url}`);
+  } else if (process.platform === 'darwin') {
+    exec(`open ${url}`);
+  } else {
+    exec(`xdg-open ${url}`);
+  }
+}
+
+// Health check poll every 400ms
+const pollTimer = setInterval(() => {
+  const req = http.get(url, (res) => {
+    if (res.statusCode && res.statusCode < 500) {
+      clearInterval(pollTimer);
+      // Give Vite HMR a moment to bind its socket handlers
+      setTimeout(openBrowser, 500);
+    }
+  });
+  req.on('error', () => {
+    // Server not accepting connections yet
+  });
+  req.setTimeout(800, () => {
+    req.destroy();
+  });
+}, 400);
+
+// Fallback safety timeout (open after 25s if poll didn't trigger)
+const fallbackTimer = setTimeout(() => {
+  clearInterval(pollTimer);
+  openBrowser();
+}, 25000);
+
 child.on('error', (err) => {
+  clearInterval(pollTimer);
+  clearTimeout(fallbackTimer);
   console.error('Lỗi khởi chạy:', err);
 });
 
 child.on('exit', (code) => {
+  clearInterval(pollTimer);
+  clearTimeout(fallbackTimer);
   process.exit(code || 0);
 });

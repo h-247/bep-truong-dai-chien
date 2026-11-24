@@ -70,7 +70,9 @@ export const RoomLobbyScreen: React.FC<RoomLobbyScreenProps> = ({
 
   const handleCopyCode = () => {
     if (!room) return;
-    navigator.clipboard.writeText(room.code);
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(room.code).catch(() => {});
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
